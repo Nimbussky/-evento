@@ -4,10 +4,10 @@
  * Unifies Gemma 2, OpenCode (Qwen2.5-Coder), Kimi AI, Qwen 2.5, and Llama 3.2 under one elite central router.
  */
 
-import { summarizeCandidateProfile, analyzeShiftFeedback, CandidateProfile } from './gemmaAnalyzer';
-import { generateShiftScheduleRules, generatePayrollExportScript, ScheduleRuleRequest, PayrollWorkflowRequest } from './openCodeEngine';
-import { parseResumeWithKimi, verifyCandidateBackgroundWithKimi } from './kimiBackgroundCheck';
-import { verifyMultimodalSecurityDocument, MultimodalVerificationRequest } from './llama32Vision';
+import { summarizeCandidateProfile, analyzeShiftFeedback, type CandidateProfile } from './gemmaAnalyzer';
+import { generateShiftScheduleRules, generatePayrollExportScript, type ScheduleRuleRequest, type PayrollWorkflowRequest } from './openCodeEngine';
+import { parseResumeWithKimi, verifyCandidateBackgroundWithKimi, type CandidateBackgroundData } from './kimiBackgroundCheck';
+import { verifyMultimodalSecurityDocument, type MultimodalVerificationRequest } from './llama32Vision';
 
 export interface CLXAgentExecutionHub {
   hubName: string;
@@ -72,7 +72,14 @@ export class CLXExecutionRouter {
   public async executeKimiBackgroundAudit(resumeText: string, candidateId: string) {
     console.log(`[CLX Hub] Routing background audit to ${this.config.activeModels.kimi}`);
     const parsedResume = await parseResumeWithKimi(resumeText);
-    const backgroundCheck = await verifyCandidateBackgroundWithKimi(candidateId, resumeText);
+    const candidateData: CandidateBackgroundData = {
+      fullName: parsedResume.fullName || candidateId,
+      resumeSummary: parsedResume.summary || '',
+      claimedSkills: parsedResume.skills || [],
+      claimedExperienceYears: parsedResume.experienceYears || 0,
+      additionalBackgroundInfo: `Candidate ID: ${candidateId}`
+    };
+    const backgroundCheck = await verifyCandidateBackgroundWithKimi(candidateData);
     return { parsedResume, backgroundCheck };
   }
 
