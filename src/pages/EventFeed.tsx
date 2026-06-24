@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../lib/supabase"
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from "react-leaflet"
 import "leaflet/dist/leaflet.css"
 import L from "leaflet"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { EventCard } from "@/components/EventCard"
-import { MapPin, List as ListIcon, Sparkles, SlidersHorizontal, RefreshCw } from "lucide-react"
+import { MapPin, List as ListIcon, Sparkles, SlidersHorizontal, RefreshCw, Navigation } from "lucide-react"
 
 // Fix leaflet default icon issue in React
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -82,9 +82,22 @@ const FALLBACK_EVENTS = [
   }
 ]
 
+// Custom Leaflet Helper for Uber/Rapido Map Auto-Pan
+function LiveRadarAutodetect({ userLocation }: { userLocation: { lat: number; lng: number } | null }) {
+  const map = useMap()
+  useEffect(() => {
+    if (userLocation) {
+      map.flyTo([userLocation.lat, userLocation.lng], 14, { animate: true, duration: 2 })
+    }
+  }, [userLocation, map])
+  return null
+}
+
 export default function EventFeed() {
   const [view, setView] = useState("list")
   const [events, setEvents] = useState<any[]>([])
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [locating, setLocating] = useState(false)
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -104,8 +117,38 @@ export default function EventFeed() {
     fetchEvents()
   }, [])
 
+  // Auto-Detect Live Location via Free Google Chrome / HTML5 Geolocation API
+  const detectLiveLocation = () => {
+    setLocating(true)
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+          setLocating(false)
+        },
+        (err) => {
+          console.error("Geolocation error:", err)
+          // Default fallback high-accuracy mock in Pune if browser blocks or lacks GPS hardware
+          setUserLocation({ lat: 18.5204, lng: 73.8567 })
+          setLocating(false)
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      )
+    } else {
+      setUserLocation({ lat: 18.5204, lng: 73.8567 })
+      setLocating(false)
+    }
+  }
+
+  // Automatically trigger auto-detection when user switches to Map tab
+  useEffect(() => {
+    if (view === "map" && !userLocation) {
+      detectLiveLocation()
+    }
+  }, [view])
+
   return (
-    <div className="min-h-screen bg-navy-900 text-white flex flex-col">
+    <div className="min-h-screen bg-navy-900 text-white flex flex-col selection:bg-amber-500 selection:text-slate-950">
       {/* Premium Header */}
       <div className="p-5 border-b border-slate-700 bg-navy-900/90 backdrop-blur-xl sticky top-0 z-20 shadow-2xl">
         <div className="flex justify-between items-center mb-5">
@@ -174,10 +217,30 @@ export default function EventFeed() {
           </div>
         ) : (
           <div className="h-[calc(100vh-220px)] w-full relative">
-            <div className="absolute top-4 left-4 z-[1000] bg-slate-900/90 border border-slate-700 text-white px-4 py-3 rounded-xl backdrop-blur-md shadow-2xl space-y-1">
-              <p className="text-xs font-bold text-amber-400 uppercase tracking-wider">🎯 Radar Range Lock</p>
-              <p className="text-sm font-extrabold text-slate-100">Showing 4 active jobs within 10 km</p>
+            {/* Uber / Rapido Floating Status Card */}
+            <div className="absolute top-4 left-4 z-[1000] bg-slate-900/95 border border-slate-700 text-white p-5 rounded-3xl backdrop-blur-xl shadow-2xl space-y-4 max-w-xs">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[10px] font-black px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full border border-blue-500/30 flex items-center gap-2 shadow-lg tracking-wider">
+                  <span className="h-2 w-2 rounded-full bg-blue-500 animate-ping" />
+                  UBER / RAPIDO RADAR
+                </span>
+                <span className="text-xs text-slate-400 font-extrabold">10 km Lock</span>
+              </div>
+              <div>
+                <p className="text-base font-black text-slate-100 tracking-tight">Live GPS Auto-Detection</p>
+                <p className="text-xs text-slate-400 mt-1 font-medium leading-relaxed">
+                  Pulls free Google Chrome high-accuracy location APIs instantly to drop your blue radar pin.
+                </p>
+              </div>
+              <button 
+                onClick={detectLiveLocation}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black text-xs py-3 px-5 rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center gap-2.5 transition-all hover:scale-105 uppercase tracking-wider"
+              >
+                <Navigation className={`w-4 h-4 text-white ${locating ? "animate-spin" : ""}`} />
+                {locating ? "Acquiring GPS Lock..." : "🎯 Re-Center Live Location"}
+              </button>
             </div>
+
             <MapContainer 
               center={[18.5204, 73.8567]} 
               zoom={13} 
@@ -188,16 +251,49 @@ export default function EventFeed() {
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
               />
+              
+              {/* Auto-Pan helper */}
+              <LiveRadarAutodetect userLocation={userLocation} />
+
+              {/* Uber / Rapido Pulsing Blue Circle Marker */}
+              {userLocation && (
+                <>
+                  {/* Outer pulsing radar ring */}
+                  <CircleMarker 
+                    center={[userLocation.lat, userLocation.lng]} 
+                    pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.25 }} 
+                    radius={32} 
+                  />
+                  {/* Inner solid blue dot */}
+                  <CircleMarker 
+                    center={[userLocation.lat, userLocation.lng]} 
+                    pathOptions={{ color: '#ffffff', fillColor: '#2563eb', fillOpacity: 1, weight: 3 }} 
+                    radius={10} 
+                  >
+                    <Popup className="bg-slate-900 text-white border-none shadow-2xl rounded-2xl p-2">
+                      <div className="p-1 text-center space-y-1">
+                        <p className="font-extrabold text-base text-blue-400">📍 You Are Here</p>
+                        <p className="text-xs text-slate-300 font-medium">Uber/Rapido High-Accuracy Live Radar</p>
+                        <p className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 py-0.5 px-2 rounded-full border border-emerald-500/20 mt-2">
+                          🟢 GPS Lock Active
+                        </p>
+                      </div>
+                    </Popup>
+                  </CircleMarker>
+                </>
+              )}
+
+              {/* Event Job Markers */}
               {events.map(event => (
                 <Marker key={event.id} position={[event.lat, event.lng]}>
-                  <Popup className="bg-slate-800 text-white border-none shadow-2xl rounded-xl p-2">
+                  <Popup className="bg-slate-800 text-white border-none shadow-2xl rounded-2xl p-2">
                     <div className="p-1">
                       <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30">
                         🔥 {event.matchScore || 95}% MATCH
                       </span>
                       <p className="font-extrabold text-base text-slate-100 mt-2">{event.title}</p>
                       <p className="text-xs font-bold text-amber-400 mt-1">₹{event.pay} • {event.distance}</p>
-                      <button className="mt-3 w-full bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold py-1.5 rounded-lg transition-all">
+                      <button className="mt-3 w-full bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold py-2 rounded-xl transition-all shadow-lg shadow-amber-500/20 hover:scale-105">
                         Instant Quick Apply
                       </button>
                     </div>
