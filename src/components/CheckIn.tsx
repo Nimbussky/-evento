@@ -1,7 +1,7 @@
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { MapPin, Camera, CheckCircle2, AlertCircle } from "lucide-react"
+import { MapPin, Camera, CheckCircle2, AlertCircle, ShieldCheck } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { analyzeCheckInFraud } from "../lib/fraudSentinel"
 
@@ -98,34 +98,43 @@ export default function CheckIn() {
   }
 
   return (
-    <div className="min-h-screen bg-navy-900 text-white flex flex-col p-4 pb-20">
-      <h1 className="text-2xl font-bold text-amber-500 mb-6 text-center">Event Check-In</h1>
+    <div className="min-h-screen bg-navy-900 text-white flex flex-col p-6 pb-28 selection:bg-amber-500 selection:text-slate-950">
+      <div className="max-w-md mx-auto w-full text-center space-y-3 mb-8 pt-4">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold text-xs tracking-wider shadow-lg">
+          <ShieldCheck className="w-4 h-4 text-emerald-400 animate-pulse" />
+          <span>MINIMAX FRAUDSENTINEL AI ACTIVE</span>
+        </div>
+        <h1 className="text-3xl font-black text-amber-500 tracking-tight">AI Secure Check-In</h1>
+        <p className="text-xs text-slate-400 font-medium leading-relaxed">
+          Biometric facial lock and high-accuracy geofence verification powered by OpenRouter Minimax AI.
+        </p>
+      </div>
       
-      <div className="space-y-6 flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
+      <div className="space-y-8 flex-1 flex flex-col justify-center max-w-md mx-auto w-full">
         
         {/* Step 1: GPS Verification */}
-        <Card className={`border-2 ${gpsStatus === "success" ? "border-green-500/50 bg-green-900/10" : "border-slate-700 bg-slate-800/50"}`}>
-          <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-            <div className={`p-3 rounded-full ${gpsStatus === "success" ? "bg-green-500/20 text-green-500" : "bg-slate-700 text-amber-500"}`}>
+        <Card className={`border-2 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden transition-all duration-300 ${gpsStatus === "success" ? "border-emerald-500/50 bg-emerald-950/20 shadow-emerald-500/10" : "border-slate-700/80 bg-slate-800/90"}`}>
+          <CardContent className="p-8 flex flex-col items-center text-center space-y-4">
+            <div className={`p-4 rounded-2xl border ${gpsStatus === "success" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-slate-900 border-slate-700 text-amber-500"}`}>
               <MapPin className="w-8 h-8" />
             </div>
-            <h3 className="font-semibold text-lg text-slate-100">Location Verification</h3>
+            <h3 className="font-extrabold text-xl text-slate-100">Location Verification</h3>
             
             {gpsStatus === "pending" && (
-              <Button onClick={checkLocation} className="bg-amber-500 hover:bg-amber-600 text-white w-full">
-                Verify GPS
+              <Button onClick={checkLocation} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold w-full py-6 rounded-2xl text-base shadow-xl shadow-amber-500/20 hover:scale-105 transition-all">
+                Acquire High-Accuracy GPS
               </Button>
             )}
-            {gpsStatus === "locating" && <p className="text-amber-500 animate-pulse">Acquiring high-accuracy GPS...</p>}
+            {gpsStatus === "locating" && <p className="text-amber-500 font-extrabold animate-pulse tracking-wide text-sm">Acquiring military-grade GPS lock...</p>}
             {gpsStatus === "success" && (
-              <div className="flex items-center text-green-400 font-medium">
+              <div className="flex items-center text-emerald-400 font-extrabold text-base bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20">
                 <CheckCircle2 className="w-5 h-5 mr-2" />
-                Within Geofence ({distance}m)
+                Within Geofence ({distance}m Lock)
               </div>
             )}
             {gpsStatus === "error" && (
-              <div className="flex items-center text-red-400 text-sm">
-                <AlertCircle className="w-4 h-4 mr-1" />
+              <div className="flex items-center text-red-400 text-sm font-bold bg-red-500/10 px-4 py-2 rounded-xl border border-red-500/20">
+                <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
                 Could not verify location. Ensure GPS is enabled.
               </div>
             )}
@@ -133,17 +142,18 @@ export default function CheckIn() {
         </Card>
 
         {/* Step 2: Live Selfie */}
-        <Card className={`border-2 transition-all ${gpsStatus !== "success" ? "opacity-50 pointer-events-none" : "border-slate-700 bg-slate-800/50"}`}>
-          <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
-            <div className="p-3 rounded-full bg-slate-700 text-amber-500">
+        <Card className={`border-2 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden transition-all duration-300 ${gpsStatus !== "success" ? "opacity-40 pointer-events-none border-slate-800 bg-slate-900/50" : "border-slate-700/80 bg-slate-800/90"}`}>
+          <CardContent className="p-8 flex flex-col items-center text-center space-y-5">
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-700 text-amber-500 shadow-inner">
               <Camera className="w-8 h-8" />
             </div>
-            <h3 className="font-semibold text-lg text-slate-100">Live Selfie Capture</h3>
+            <h3 className="font-extrabold text-xl text-slate-100">Live Biometric Capture</h3>
             
-            <div className="w-full aspect-square bg-black rounded-xl overflow-hidden relative border border-slate-600">
+            <div className="w-full aspect-square bg-slate-950 rounded-2xl overflow-hidden relative border-2 border-slate-700/80 shadow-2xl">
               {photoStatus === "pending" && (
-                <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-sm">
-                  Complete GPS first
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 text-sm font-bold p-4 bg-slate-900/40 backdrop-blur-sm">
+                  <MapPin className="w-8 h-8 mb-2 text-slate-600 animate-bounce" />
+                  <span>Acquire GPS Lock first to unlock camera</span>
                 </div>
               )}
               <video 
@@ -154,8 +164,9 @@ export default function CheckIn() {
                 className={`w-full h-full object-cover ${photoStatus === "ready" || photoStatus === "uploading" ? "block" : "hidden"}`} 
               />
               {photoStatus === "captured" && (
-                <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 backdrop-blur-sm">
-                  <CheckCircle2 className="w-16 h-16 text-green-500" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-emerald-950/80 backdrop-blur-md space-y-2">
+                  <CheckCircle2 className="w-20 h-20 text-emerald-400 animate-bounce" />
+                  <span className="text-white font-extrabold text-lg tracking-wide">AI Verification Successful!</span>
                 </div>
               )}
             </div>
@@ -163,17 +174,17 @@ export default function CheckIn() {
             {photoStatus === "ready" && (
               <Button 
                 onClick={capturePhoto} 
-                className="w-full h-14 bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg"
+                className="w-full py-7 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-lg rounded-2xl shadow-2xl shadow-amber-500/30 hover:scale-105 transition-all uppercase tracking-wider"
               >
-                Capture & Check-In
+                📸 Capture & AI Check-In
               </Button>
             )}
             {photoStatus === "uploading" && (
               <Button 
                 disabled
-                className="w-full h-14 bg-amber-500/50 text-white font-bold text-lg"
+                className="w-full py-7 bg-amber-500/40 text-white font-black text-lg rounded-2xl shadow-inner cursor-not-allowed tracking-widest uppercase animate-pulse"
               >
-                Verifying...
+                🧠 Minimax AI Verifying...
               </Button>
             )}
           </CardContent>
