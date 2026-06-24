@@ -146,6 +146,7 @@ export default function EventFeed() {
   const [gpsAccuracy, setGpsAccuracy] = useState<string>("Active")
 
   useEffect(() => {
+    console.log("Cloudflare Pages Git Integration Active - Enterprise Build 2026");
     const fetchEvents = async () => {
       const { data, error } = await supabase
         .from('events')
