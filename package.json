@@ -8,9 +8,9 @@
     "dev": "vite",
     "desktop": "electron .",
     "build": "tsc -b && vite build",
-    "deploy": "wrangler pages deploy web-deploy --project-name=evento-app-2026",
+    "deploy": "npm run build && wrangler deploy",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "npm run build && wrangler dev"
   },
   "dependencies": {
     "@capacitor/core": "^8.4.1",
@@ -33,6 +33,7 @@
     "@capacitor/android": "^8.4.1",
     "@capacitor/cli": "^8.4.1",
     "@capacitor/ios": "^8.4.1",
+    "@cloudflare/vite-plugin": "^1.42.2",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
