@@ -19,12 +19,9 @@ interface EventCardProps {
 
 export function EventCard({ company, title, date, duration, pay, distance, slotsLeft, isUrgent, category, matchScore = 98, skillsReq = ["Communication", "Punctual"] }: EventCardProps) {
   const [isApplied, setIsApplied] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
 
   return (
     <Card 
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className="bg-[#0e1420] border-slate-800/80 backdrop-blur-xl overflow-hidden relative hover:border-amber-500/50 hover:shadow-[0_20px_50px_rgba(245,158,11,0.15)] hover:-translate-y-1.5 transition-all duration-500 group rounded-3xl"
     >
       {/* Dynamic left accent gradient */}

@@ -5,7 +5,7 @@ import "leaflet/dist/leaflet.css"
 import L from "leaflet"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { EventCard } from "@/components/EventCard"
-import { MapPin, List as ListIcon, Sparkles, SlidersHorizontal, RefreshCw, Navigation, Zap, ShieldCheck, Award, ChevronLeft, ChevronRight, Filter } from "lucide-react"
+import { MapPin, List as ListIcon, Sparkles, SlidersHorizontal, Navigation, Zap, Award, ChevronLeft, ChevronRight, Filter } from "lucide-react"
 
 // Fix leaflet default icon issue in React
 delete (L.Icon.Default.prototype as any)._getIconUrl

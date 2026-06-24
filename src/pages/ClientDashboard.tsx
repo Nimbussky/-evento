@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "../lib/supabase";
-import { Sparkles, Crown, Building2, Users, IndianRupee, Calendar, ShieldCheck, Zap, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Sparkles, Crown, Building2, Users, IndianRupee, Calendar, ShieldCheck, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 
 const FALLBACK_CLIENT_EVENTS = [
   {
