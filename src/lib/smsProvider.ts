@@ -23,18 +23,19 @@ export interface SMSProviderConfig {
 }
 
 // Get configuration from environment variables
+const proc = (globalThis as any).process;
 const config: SMSProviderConfig = {
   twilio: {
-    accountSid: process.env.TWILIO_ACCOUNT_SID,
-    authToken: process.env.TWILIO_AUTH_TOKEN,
-    fromNumber: process.env.TWILIO_FROM_NUMBER,
+    accountSid: proc?.env?.TWILIO_ACCOUNT_SID,
+    authToken: proc?.env?.TWILIO_AUTH_TOKEN,
+    fromNumber: proc?.env?.TWILIO_FROM_NUMBER,
   },
   msg91: {
-    authKey: process.env.MSG91_AUTH_KEY,
-    senderId: process.env.MSG91_SENDER_ID || 'EVENTO',
-    templateId: process.env.MSG91_OTP_TEMPLATE_ID,
+    authKey: proc?.env?.MSG91_AUTH_KEY,
+    senderId: proc?.env?.MSG91_SENDER_ID || 'EVENTO',
+    templateId: proc?.env?.MSG91_OTP_TEMPLATE_ID,
   },
-  primaryProvider: (process.env.PRIMARY_SMS_PROVIDER as 'twilio' | 'msg91') || 'twilio',
+  primaryProvider: (proc?.env?.PRIMARY_SMS_PROVIDER as 'twilio' | 'msg91') || 'twilio',
 };
 
 /**
@@ -63,7 +64,7 @@ export class TwilioProvider implements SMSProvider {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
+          Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
         },
         body: params.toString(),
       });
@@ -124,7 +125,7 @@ export class MSG91Provider implements SMSProvider {
         mobiles: cleanPhone,
         var1: message,
         // Fallback flow/template ID if needed, or default payload structure
-        template_id: templateId || process.env.MSG91_DEFAULT_FLOW_ID,
+        template_id: templateId || ((globalThis as any).process?.env?.MSG91_DEFAULT_FLOW_ID),
       };
 
       const response = await fetch(url, {

@@ -40,8 +40,9 @@ function getOpenNodeApiKey(): string {
   if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_OPENNODE_API_KEY) {
     return import.meta.env.VITE_OPENNODE_API_KEY;
   }
-  if (typeof process !== 'undefined' && process.env && process.env.OPENNODE_API_KEY) {
-    return process.env.OPENNODE_API_KEY;
+  const proc = (globalThis as any).process;
+  if (typeof proc !== 'undefined' && proc.env && proc.env.OPENNODE_API_KEY) {
+    return proc.env.OPENNODE_API_KEY;
   }
   return '';
 }
