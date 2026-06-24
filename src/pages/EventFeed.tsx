@@ -8,12 +8,14 @@ import { EventCard } from "@/components/EventCard"
 import { MapPin, List as ListIcon, Sparkles, SlidersHorizontal, Navigation, Zap, Award, ChevronLeft, ChevronRight, Filter } from "lucide-react"
 
 // Fix leaflet default icon issue in React
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
+if (typeof window !== "undefined") {
+  delete (L.Icon.Default.prototype as any)._getIconUrl
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  })
+}
 
 const FALLBACK_EVENTS = [
   {
@@ -86,11 +88,12 @@ const FALLBACK_EVENTS = [
 function LiveRadarAutodetect({ userLocation }: { userLocation: { lat: number; lng: number } | null }) {
   const map = useMap()
   useEffect(() => {
+    if (!map) return;
     const timer = setTimeout(() => {
       map.invalidateSize()
     }, 250)
 
-    if (userLocation) {
+    if (userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number') {
       map.flyTo([userLocation.lat, userLocation.lng], 15, { animate: true, duration: 1.5 })
     }
 
@@ -167,7 +170,7 @@ export default function EventFeed() {
   // Auto-Detect Live Location via Free Google Chrome / HTML5 Geolocation API
   const detectLiveLocation = () => {
     setLocating(true)
-    if ("geolocation" in navigator) {
+    if (typeof navigator !== "undefined" && "geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
@@ -197,13 +200,14 @@ export default function EventFeed() {
   }, [view])
 
   // Filter events based on selected category pill
-  const filteredEvents = events.filter(ev => {
+  const filteredEvents = (events || []).filter(ev => {
+    if (!ev) return false;
     if (selectedCategory === "all") return true;
     if (selectedCategory === "urgent") return ev.isUrgent;
     return ev.category?.toLowerCase() === selectedCategory.toLowerCase();
   });
 
-  const currentSlideData = WELCOME_CAROUSEL_SLIDES[activeSlide];
+  const currentSlideData = WELCOME_CAROUSEL_SLIDES[activeSlide] || WELCOME_CAROUSEL_SLIDES[0];
   const SlideIcon = currentSlideData.icon;
 
   return (
@@ -331,8 +335,8 @@ export default function EventFeed() {
                   <p className="text-sm text-slate-500">Try selecting 'All Live Shifts' to view the complete workforce inventory.</p>
                 </div>
               ) : (
-                filteredEvents.map(event => (
-                  <EventCard key={event.id} {...event} />
+                filteredEvents.map((event, idx) => (
+                  <EventCard key={event.id || `fallback-key-${idx}`} {...event} />
                 ))
               )}
             </div>
@@ -405,8 +409,8 @@ export default function EventFeed() {
                 )}
 
                 {/* Event Job Markers */}
-                {events.map(event => (
-                  <Marker key={event.id} position={[event.lat, event.lng]}>
+                {(events || []).map((event, idx) => (
+                  <Marker key={event.id || `marker-${idx}`} position={[event.lat || 18.5204, event.lng || 73.8567]}>
                     <Popup className="bg-slate-800 text-white border-none shadow-2xl rounded-2xl p-2">
                       <div className="p-1">
                         <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30">
