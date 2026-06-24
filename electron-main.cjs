@@ -12,12 +12,8 @@ function createWindow() {
     }
   })
 
-  // In development, point the Desktop app to the Vite local server
-  // In production, you would point it to the built files or the Cloudflare URL
-  win.loadURL('http://localhost:5173')
-  
-  // Or load the local built files if the server is offline:
-  // win.loadFile(path.join(__dirname, 'dist', 'index.html'))
+  // Load the local built files for the production Desktop App
+  win.loadFile(path.join(__dirname, 'dist', 'index.html'))
 }
 
 app.whenReady().then(() => {

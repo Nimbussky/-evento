@@ -2,11 +2,14 @@ import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { MapPin, Camera, CheckCircle2, AlertCircle } from "lucide-react"
+import { supabase } from "../lib/supabase"
+import { analyzeCheckInFraud } from "../lib/fraudSentinel"
 
 export default function CheckIn() {
   const [gpsStatus, setGpsStatus] = useState<"pending" | "locating" | "success" | "error">("pending")
-  const [photoStatus, setPhotoStatus] = useState<"pending" | "ready" | "captured">("pending")
+  const [photoStatus, setPhotoStatus] = useState<"pending" | "ready" | "captured" | "uploading">("pending")
   const [distance, setDistance] = useState<number | null>(null)
+  const [location, setLocation] = useState<{lat: number, lng: number} | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const startCamera = async () => {
@@ -25,7 +28,8 @@ export default function CheckIn() {
     setGpsStatus("locating")
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (_position) => {
+        (position) => {
+          setLocation({ lat: position.coords.latitude, lng: position.coords.longitude })
           // Haversine distance mock calculation
           // For demo, we'll assume they are within 50 meters
           setDistance(50)
@@ -40,6 +44,56 @@ export default function CheckIn() {
       )
     } else {
       setGpsStatus("error")
+    }
+  }
+
+  const capturePhoto = async () => {
+    if (!videoRef.current || !location) return
+    
+    const canvas = document.createElement("canvas")
+    canvas.width = videoRef.current.videoWidth
+    canvas.height = videoRef.current.videoHeight
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height)
+    
+    setPhotoStatus("uploading")
+    
+    try {
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg"))
+      if (!blob) throw new Error("Could not create image blob")
+
+      const fileName = `checkin-${Date.now()}.jpg`
+      const { error: uploadError } = await supabase.storage
+        .from("checkins")
+        .upload(fileName, blob, { contentType: "image/jpeg" })
+
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage
+        .from("checkins")
+        .getPublicUrl(fileName)
+        
+      const imageUrl = urlData.publicUrl
+
+      const fraudResult = await analyzeCheckInFraud(imageUrl, location)
+      console.log("Fraud Analysis Result:", fraudResult)
+
+      const { error: insertError } = await supabase
+        .from("check_ins")
+        .insert({
+          photo_url: imageUrl,
+          lat: location.lat,
+          lng: location.lng,
+          is_valid: !fraudResult.isFraudulent
+        })
+        
+      if (insertError) throw insertError
+      
+      setPhotoStatus("captured")
+    } catch (error) {
+      console.error("Check-in failed:", error)
+      setPhotoStatus("ready")
     }
   }
 
@@ -97,7 +151,7 @@ export default function CheckIn() {
                 autoPlay 
                 playsInline 
                 muted 
-                className={`w-full h-full object-cover ${photoStatus === "ready" ? "block" : "hidden"}`} 
+                className={`w-full h-full object-cover ${photoStatus === "ready" || photoStatus === "uploading" ? "block" : "hidden"}`} 
               />
               {photoStatus === "captured" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 backdrop-blur-sm">
@@ -108,10 +162,18 @@ export default function CheckIn() {
 
             {photoStatus === "ready" && (
               <Button 
-                onClick={() => setPhotoStatus("captured")} 
+                onClick={capturePhoto} 
                 className="w-full h-14 bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg"
               >
                 Capture & Check-In
+              </Button>
+            )}
+            {photoStatus === "uploading" && (
+              <Button 
+                disabled
+                className="w-full h-14 bg-amber-500/50 text-white font-bold text-lg"
+              >
+                Verifying...
               </Button>
             )}
           </CardContent>
